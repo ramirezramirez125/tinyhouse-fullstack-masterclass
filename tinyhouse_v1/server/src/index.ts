@@ -1,13 +1,19 @@
+require("dotenv").config()
 
-import express from 'express'
+import { connectDatabase } from './database/'
+import express, {Application} from 'express'
 import { ApolloServer } from 'apollo-server-express'
-import { typeDefs, resolvers } from './graphql/index';
+import { typeDefs, resolvers } from './graphql/index'
 
-const app = express()
-const port = 9000
+const mount = async (app: Application) => {
+  const db = await connectDatabase()
+  const server = new ApolloServer({typeDefs, resolvers, context: ()=> ({db})})
+  server.applyMiddleware({app, path: '/api'})
+  app.listen(process.env.PORT)
+  console.log(process.env.PORT)
+  console.log(`[app]: http://localhost:${process.env.PORT}`)
+  const listings = await db.listings.find({}).toArray()
+  console.log(listings)
+}
 
-const server = new ApolloServer({typeDefs, resolvers})
-server.applyMiddleware({app, path: '/api'})
-
-app.listen(port)
-console.log(`[app]: http://localhost:${port}`)
+mount(express())
